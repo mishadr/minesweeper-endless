@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Minesweeper endless</title>
+
+  <link rel="stylesheet" type="text/css" href="css/styles.css">
+
+</head>
+<body>
+
+<div class="all-panel">
+  <label style="align-self: center; font-size: 20px">Minesweeper endless</label>
+
+  <div class="menu-panel">
+    <button id="new-game">New game</button>
+    <button id="pause" disabled>Pause</button>
+  </div>
+
+  <div class="game-panel">
+    <div class="info-panel">
+      <label class="info" id="status">Status: play</label><br>
+      <label class="info" id="mode">Mode: classic</label><br>
+      <label class="info" id="level">Level: 0</label><br>
+<!--      <label class="info" id="apples">Apples: 0</label><br>-->
+<!--      <label class="info" id="steps">Steps: 0</label><br>-->
+<!--      <label class="info" id="score">Score: 0</label><br>-->
+      <label class="info" id="best">Best score: 0</label><br>
+      <label class="info" id="time">Time: 0</label><br>
+
+    </div>
+
+    <div class="game-box">
+      <svg id="svg"  xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="pause">
+        <label style="vertical-align: middle; ">PAUSED</label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/libs/jquery-3.6.0.js"></script>
+
+<script src="js/drawer.js"></script>
+<script src="js/game.js"></script>
+<script src="js/controller.js"></script>
+<script>
+  new Controller()
+</script>
+
+</body>
+</html>
