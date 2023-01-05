@@ -1,84 +1,147 @@
+COLORS = {
+    0: '#d7d7d7',
+    1: '#4eabff',
+    2: '#0ec400',
+    3: '#ff0000',
+    4: '#0115a5',
+    5: '#b44a1d',
+    6: '#6bdbb2',
+    7: '#000000',
+    8: '#8b8b8b',
+}
+
+
 class Drawer {
     constructor(element) {
         this.element = element
-
+        // TODO parameter, maybe scale?
         this.size = 30
-        // this.left = null
-        // this.top = null
 
-        this.width = this.element.clientWidth
-        this.height = this.element.clientHeight
+        this.ctx = this.element.getContext("2d", {willReadFrequently: true})
+        this.viewX = 0
+        this.viewY = 0
+        this.margin = 50
+
+        this.img = {}
+        for (let i=0;i<9;++i) {
+            let img = new Image(this.size, this.size)
+            img.crossOrigin = "anonymous"
+            img.src = `assets/pole${i}.png`
+            this.img[i] = img
+        }
+
+        for (let [key, src] of [
+            [HIDDEN, "assets/hidden.png"],
+            [BOMB, "assets/bomb.png"],
+            [BOMB_EXPLODE, "assets/bomb_explode.png"],
+            [FLAG, "assets/flag.png"],
+            [FLAG_WRONG, "assets/flag_wrong.png"],]) {
+
+            let img = new Image(this.size, this.size)
+            img.crossOrigin = "anonymous"
+            img.src = src
+            img.alt = src
+            this.img[key] = img
+        }
+
+        // // Load all images
+        // for (const img of Object.values(this.img)) {
+        //     // console.log('not loaded yet')
+        //     img.onload = () => {
+        //         console.log("loaded img", img.src)
+        //     }
+        // }
     }
 
     // Compute coordinates transform
-    init() {
-        this.element.innerHTML = ''
-        let w = Math.ceil(this.width / this.size)
-        let h = Math.ceil(this.height / this.size)
+    init(parameters) {
+        this.viewX = 0
+        this.viewY = 0
+        let w = parameters.width
+        let h = parameters.height
+        if (parameters.mode === "endless") {
+            w = Math.floor((this.element.clientWidth - 2 * this.margin) / this.size)
+            h = Math.floor((this.element.clientHeight - 2 * this.margin) / this.size)
+        }
         return [w, h]
     }
 
+    // Field i -> X coordinate
     getX(i) {
-        return this.size * i
+        return this.size * i - this.viewX + this.margin
     }
 
+    // Field j -> Y coordinate
     getY(j) {
-        return this.size * j
+        return this.size * j - this.viewY + this.margin
     }
 
-    id(pos) {
-        return `${pos.x}-${pos.y}`
+    // X,Y coordinates -> field position
+    find (x, y) {
+        x = Math.floor((x - this.margin) / this.size)
+        y = Math.floor((y - this.margin) / this.size)
+        return new Pos(x, y)
     }
 
     // Change primitives at cell (i, j) according to its value
-    add(pos, value) {
-        if (value < 0) {// Not open
-            let x = this.getX(pos.x)
-            let y = this.getY(pos.y)
-            let box = document.createElementNS("http://www.w3.org/2000/svg", "path")
-            box.setAttribute('d', `M${x + 1},${y + this.size / 2} L${x + this.size - 1},${y + this.size / 2}`)
-            box.setAttribute('stroke', '#d7d7d7')
-            box.setAttribute('stroke-width', this.size - 2)
-            box.setAttribute('class', `field cell-${this.id(pos)}`)
-            this.element.appendChild(box)
-        }
-        else {
-            // TODO
-        }
-    }
-
-    // Move primitives of class=type primitives from cell at posFrom to cell at posTo
-    change(pos, value) {
-        // TODO remove
-        // TODO add
-
-        let objs = $(`.${type}.cell-${this.id(posFrom)}`)
-        for (const obj of objs) {
-            let cx = parseFloat(obj.getAttribute('cx'))
-            let cy = parseFloat(obj.getAttribute('cy'))
-            obj.setAttribute('cx', cx + (posTo.x - posFrom.x) * this.size)
-            obj.setAttribute('cy', cy + (posTo.y - posFrom.y) * this.size)
-            obj.setAttribute('class', `${type} cell-${this.id(posTo)}`)
-        }
-    }
-
-    // Delete primitives of class=type from cell at pos
-    del(type, pos) {
-        let objs = $(`.${type}.cell-${this.id(pos)}`)
-        for (const obj of objs) {
-            obj.outerHTML = ''
-        }
-    }
-
-    addFree(pos) {
+    set(pos, value) {
         let x = this.getX(pos.x)
         let y = this.getY(pos.y)
-        let box = document.createElementNS("http://www.w3.org/2000/svg", "path")
-        box.setAttribute('d', `M${x + 1},${y + this.size / 2} L${x + this.size - 1},${y + this.size / 2}`)
-        box.setAttribute('stroke', '#d7d7d7')
-        box.setAttribute('stroke-width', this.size - 2)
-        box.setAttribute('class', `field cell-${this.id(pos)}`)
-        this.element.appendChild(box)
+        let ctx = this.ctx
+
+        if (value >= 200) {// Flag
+            ctx.drawImage(this.img[FLAG], x, y, this.size, this.size)
+        }
+        else if (value >= 100) {// Not open
+            ctx.drawImage(this.img[HIDDEN], x, y, this.size, this.size)
+        }
+        // else if (0 <= value && value < 9) { // Raster number
+        //     this.ctx.fillStyle = '#d7d7d7'
+        //     this.ctx.fillRect(x+1, y+1, this.size-1, this.size-1)
+        //     this.ctx.font = `${Math.floor(this.size)}px Arial`
+        //     this.ctx.fillStyle = COLORS[value]
+        //     this.ctx.textAlign = "center"
+        //     this.ctx.fillText(value.toString(), x+this.size/2, y+Math.floor(this.size*0.9))
+        // }
+        else { // Image
+            if (!(value >= 0))
+                console.log(this.img[value], value)
+            this.ctx.drawImage(this.img[value], x, y, this.size, this.size)
+        }
     }
 
+    updateViewBox(xMinBlock, yMinBlock, xMaxBlock, yMaxBlock) {
+        let x0 = xMinBlock * this.size
+        let y0 = yMinBlock * this.size
+        let x1 = xMaxBlock * this.size
+        let y1 = yMaxBlock * this.size
+
+        let dx = 0
+        let dy = 0
+
+        let old = this.ctx.getImageData(0, 0, this.ctx.canvas.width - 1, this.ctx.canvas.height - 1)
+        old.crossOrigin = "anonymous";
+
+        let parent = this.element.parentElement
+        let pw = parent.clientWidth
+        let ph = parent.clientHeight
+
+        if (xMinBlock * this.size < this.viewX) {
+            dx = this.viewX - xMinBlock * this.size
+            this.viewX = xMinBlock * this.size
+        }
+        if (yMinBlock * this.size < this.viewY) {
+            dy = this.viewY - yMinBlock * this.size
+            this.viewY = yMinBlock * this.size
+        }
+
+        // This is to avoid visible picture moves when
+        this.ctx.canvas.width = Math.max(x1-x0 + 2*this.margin, pw + dx, pw + parent.scrollLeft)
+        this.ctx.canvas.height = Math.max(y1-y0 + 2*this.margin, ph + dy, ph + parent.scrollTop)
+
+        parent.scrollLeft += dx
+        parent.scrollTop += dy
+
+        this.ctx.putImageData(old, dx, dy)
+    }
 }

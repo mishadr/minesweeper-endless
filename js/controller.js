@@ -1,28 +1,39 @@
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+// MODES = ["beginner", "intermediate", "expert", "endless"]
 
 class Controller {
     constructor() {
-        this.gamePanel = document.getElementById("svg")
-        this.drawer = new Drawer(this.gamePanel)
+        this.canvas = document.getElementById("canvas")
+        this.canvas.parentElement.setAttribute("background-color", "black")
 
-        this.level = null
-        this.game = null
+        this.drawer = new Drawer(this.canvas)
+        this.parameters = new Parameters("endless", 0.19)
+        this.game = null // new Game(this.parameters, this.drawer)
 
         this.status = 'off'
-        this.running = false
-        this.time = 0
+        this.resultSaved = true
+        this.timer = new Timer(100, () => {
+            this.timeLabel.innerText = 'Time: ' + this.timer.time().toFixed(2)
+        })
+
+        this.updateInfo()
+
+        // Add buttons listeners
+        $(".button-cancel").click(() => {
+            // Cancel changes
+            this.parameters.setup()
+            this.pause()
+        })
+
+        $(".button-back").click(() => {
+            $(".finish").css('display', 'none')
+        })
+
+        $(".button-new").click(() => this.newGame())
 
         // Add keys listeners
         document.addEventListener('keydown', (e) => {
             if (e.key === 'p')
                 this.pause()
-        })
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'Shift')
-                this.accelerate = false
         })
 
         window.addEventListener("beforeunload", (e) => {
@@ -35,11 +46,16 @@ class Controller {
 
         window.addEventListener('load', (e) => {
             this.status = 'off'
-            document.getElementById("status").innerText = 'Status: ' + this.status
+            document.getElementById("status").innerText = 'Status: off'
             this.pauseButton.disabled = true
         })
 
         this.timeLabel = document.getElementById("time")
+
+        this.paramtersButton = document.getElementById("parameters")
+        this.paramtersButton.addEventListener('click', (e) => {
+            this.pause()
+        })
 
         this.newGameButton = document.getElementById("new-game")
         this.newGameButton.addEventListener('click', (e) => {
@@ -48,97 +64,143 @@ class Controller {
 
         this.pauseButton = document.getElementById("pause")
         this.pauseButton.addEventListener('click', (e) => {
+            console.log('pause')
             this.pause()
         })
 
-        this.svg = document.getElementById("svg")
-        this.svg.addEventListener("click", (e) => {
-            if (e.buttons === 0)
-                this.game.leftClick(e.layerX, e.layerY)
-            // console.log(e)
+        // Mouse clicking
+        this.canvas.addEventListener("mousedown", (e) => {
+            // console.log('button', e.button, 'buttons', e.buttons, 'which', e.which)
+            // FIXME: double click also fires left click
+            if (this.game.status !== ON)
+                this.finish()
+            else if (e.buttons === 1) {
+                this.timer.pause()
+                // TODO show loading picture
+                this.game.leftClick(
+                    e.offsetX + this.drawer.viewX,
+                    e.offsetY + this.drawer.viewY) // this could take time
+                this.timer.run()
+                this.updateInfo()
+                if (this.game.status !== ON)
+                    this.finish()
+            }
+            else if (e.buttons === 2) {
+                this.game.rightClick(
+                    e.offsetX + this.drawer.viewX,
+                    e.offsetY + this.drawer.viewY)
+                this.updateInfo()
+            }
+            else if (e.buttons === 3) { // left + right
+                this.game.doubleClick(
+                    e.offsetX + this.drawer.viewX,
+                    e.offsetY + this.drawer.viewY)
+                this.updateInfo()
+                if (this.game.status !== ON)
+                    this.finish()
+            }
         })
-        this.svg.oncontextmenu = (e) => {
+        window.oncontextmenu = (e) => {
+            console.log('oncontextmenu')
             e.preventDefault()
-            // console.log(e)
-            if (e.buttons === 2)
-                this.game.rightClick(e.layerX, e.layerY)
-            else if (e.buttons === 3)
-                this.game.doubleClick(e.layerX, e.layerY)
         }
     }
 
     updateInfo() {
-        let bestScore = localStorage.getItem('bestScore')
-        if (this.game.score > bestScore)
-            localStorage.setItem('bestScore', this.game.score)
-
-        // document.getElementById("mode").innerText = 'Mode: ' + this.level.name
-        // document.getElementById("level").innerText = 'Level: ' + this.level.level
-        // document.getElementById("status").innerText = 'Status: ' + this.status
-        // document.getElementById("steps").innerText = 'Steps: ' + this.game.steps
-        // document.getElementById("apples").innerText = 'Apples: ' + this.game.apples
-        // document.getElementById("score").innerText = 'Score: ' + this.game.score
+        $("#mode").text('Mode: ' + this.parameters.mode)
+        $("#density").text('Density: ' + this.parameters.density)
+        $("#bombs").text('Bombs: ' + this.parameters.bombs)
+        if (this.game !== null) {
+            $("#status").text('Status: ' + this.game.status)
+            $("#opens").text('Open: ' + this.game.opened)
+            $("#flags").text('Flags: ' + this.game.flags)
+            // $("#dies").text('Dies: ' + this.game.dies)
+        }
         // document.getElementById("best").innerText = 'Best score: ' + localStorage.getItem('bestScore')
     }
 
     newGame() {
-        if (this.status === 'play') {
+        if (this.game && this.game.status === ON && this.game.opened > 0)
             if (!confirm("Are you sure? Current game will be lost"))
                 return
-        }
-        else if (this.status === 'pause') {
-            if (!confirm("Are you sure? Current game will be lost"))
-                return
-            this.pause()
-        }
 
-        // TODO read paramters menu
-        // this.level = new LevelZero()
-        // this.level = new LevelClassic()
+        $(".finish").css('display', 'none')
+        $(".pause").css('display', 'none')
 
-        this.game = new Game(15, 15, 1, this.drawer)
-        this.time = 0
+        let parent = this.canvas.parentElement
+        this.canvas.getContext("2d").canvas.width = parent.clientWidth - 10 // to prevent scrollers
+        this.canvas.getContext("2d").canvas.height = parent.clientHeight - 10
+        this.game = new Game(this.parameters, this.drawer)
         this.pauseButton.disabled = false
+        if (this.parameters.mode === "endless") {
+            $("#density").css("display", "inline")
+            $("#bombs").css("display", "none")
+        }
+        else {
+            $("#density").css("display", "none")
+            $("#bombs").css("display", "inline")
+        }
+        $('#label-pause').text("PAUSE")
+
+        this.timer.stop()
         this.status = 'play'
-        if (!this.running) {
-            this.run()
-        }
-    }
-
-    pause() {
-        if (this.status === 'play')
-            this.status = 'pause'
-        else if (this.status === 'pause')
-            this.status = 'play'
-        else
-            return
-        document.getElementById("status").innerText = 'Status: ' + this.status
-        this.pauseButton.innerText = this.status === 'play' ? 'Pause' : 'Play'
-        $(".game-box .pause").css('display', this.status === 'play' ? 'none' : 'inline')
-    }
-
-    // Perform 1 step of the game
-    step() {
-        let success = this.game.step()
-        if (success < 0) {
-            this.status = 'game over'
-            this.pauseButton.disabled = true
-        }
+        this.resultSaved = false
+        this.timeLabel.innerText = 'Time: ' + this.timer.time().toFixed(2)
         this.updateInfo()
     }
 
-    // Main game loop
-    async run() {
-        this.running = true
-        while (1) {
-            await sleep(100)
-            if (this.status === 'play') {
-                this.time += 0.1
-                // console.log(this.time)
-                this.timeLabel.innerText = 'Time: ' + this.time.toFixed(1)
-            }
-            if (!this.running)
-                break
+    pause() {
+        if (this.status === 'play' || this.status === 'off') {
+            this.status = 'pause'
+            this.timer.pause()
         }
+        else if (this.status === 'pause') {
+            if (this.game) {
+                this.status = 'play'
+                if (this.game.opened > 0)
+                    this.timer.run()
+            }
+            else { // before playing
+                this.status = 'off'
+            }
+        }
+        else
+            return
+        // document.getElementById("status").innerText = 'Status: ' + this.status
+        // this.pauseButton.innerText = this.status === 'play' ? 'Pause' : 'Play'
+        $(".pause").css('display', this.status === 'pause' ? 'flex' : 'none')
+        this.timeLabel.innerText = 'Time: ' + this.timer.time().toFixed(2)
+    }
+
+    // Finish the game with WIN or EXPLODE result
+    finish() {
+        console.log(this.game.status)
+        this.timer.pause()
+        this.timeLabel.innerText = 'Time: ' + this.timer.time().toFixed(2)
+        $(".finish").css('display', 'flex')
+        $('#label-finish').text(this.game.status === WIN ? "You win!" : "You failed!")
+
+        let resultsList = ResultsList.fromString(localStorage.getItem('resultsList'))
+        let mode = this.parameters.mode
+
+        if (this.game.status === WIN || mode === "endless") {
+            // Save results
+            if (!this.resultSaved) {
+                let currentResult = new Result(
+                    new Date(), mode, this.parameters.density,
+                    this.game.opened, this.timer.time())
+                resultsList.add(currentResult)
+                localStorage.setItem('resultsList', resultsList.toString())
+                this.resultSaved = true
+            }
+        }
+        else {
+            // TODO explode
+        }
+
+        // Show this mode top results
+        let $div = $('#finish-table')
+        $div.html(`<p><u><b>Top results for ${mode}</b></u></p>`)
+        $div.append(resultsList.table(mode))
     }
 }
