@@ -13,7 +13,7 @@
 
   <div class="control-panel">
     <div class="menu-panel">
-      <button id="parameters" style="grid-column: 1 / 3;">Change parameters</button>
+      <button id="parameters" style="grid-column: 1 / 3;">Parameters</button>
       <button id="new-game">New game</button>
       <button id="pause" disabled>Pause</button>
     </div>
@@ -34,8 +34,6 @@
   </div>
 
   <div class="game-panel">
-<!--    <label style="align-self: center; font-size: 20px">Minesweeper endless</label>-->
-
     <div class="game-box">
 <!--      <svg id="svg"  xmlns="http://www.w3.org/2000/svg"></svg>-->
       <canvas id="canvas"></canvas>
@@ -121,16 +119,30 @@
   </div>
 
   <div class="help-panel">
-    <label class="info"><b>Help</b></label>
-    <p>
-      Rules are classic. The task is to open cells without mines. Initially all cells are hidden. Left click opens a cell. If open a cell with the mine you loose. A number in a cell tells the number of mines in 8 neighbor cells.
-    </p>
-    <p>
-      Right click puts a flag. If a number of flags around a cell is equal to a number in it, double click will open all the rest hidden cells in the neighborhood. Note, it is not safe if flags are put not correctly.
-    </p>
-    <p>
-      In the Endless mode the field is not bounded so game can continue endlessly.
-    </p>
+    <label style="font-size: 24px;"><b>Help</b></label>
+    <details open>
+      <summary>Rules</summary>
+      <p>
+        Rules are classic. The task is to open cells without mines.
+        Initially all cells are hidden. Left click opens a cell.
+        If open a cell with the mine you loose.
+        A number in a cell tells the number of mines in 8 neighbor cells.
+      </p>
+      <p>
+        Right click puts a flag.
+        If a number of flags around a cell is equal to a number in it,
+        double click will open all the rest hidden cells in the neighborhood.
+        Note, it is not safe if flags are put not correctly.
+      </p>
+      <p>
+        In the Endless mode the field is not bounded so game can continue endlessly.
+      </p>
+    </details>
+
+    <details>
+      <summary>More games</summary>
+      <a href="https://mishadr.github.io/snake/">Snake</a>
+    </details>
   </div>
 
 </div>
@@ -143,46 +155,7 @@
 <script src="js/parameters.js"></script>
 <script src="js/controller.js"></script>
 <script>
-    // let img = new Image()
-    // img.crossOrigin = "anonymous"
-    // img.src = "assets/hidden.png"
-    // console.log("1")
-    //
-    // let ctx = document.getElementById("canvas").getContext("2d")
-    //
-    // img.onload = () => {
-    //     console.log("loaded img", img.src)
-    //     ctx.drawImage(img, 0, 0)
-    //
-    //     let c = ctx.getImageData(0, 0, 10, 10)
-    // }
-
-    // var folder = "assets/";
-    // $.ajax({
-    //     url : folder,
-    //     success: function (data) {
-    //         console.log(data)
-    //     }
-    // });
-
     new Controller()
-  // let canvas = document.getElementById("canvas")
-  // const ctx = canvas.getContext('2d');
-  // let width = 500
-  // let height = 500
-  // // ctx.canvas.width = width
-  // // ctx.canvas.height = height
-  // // ctx.translate(400, 100)
-  // ctx.fillRect(25, 25, 100, 100)
-  // const img = new Image();   // Create new img element
-  // img.src = 'assets/hidden.png'; // Set source path
-  // img.onload = () => {
-  //     for (let i=0; i<60; ++i)
-  //         for (let j=0; j<60; ++j) {
-  //             ctx.drawImage(img, 20*i, 20*j)
-  //         }
-  // }
-
 </script>
 
 </body>

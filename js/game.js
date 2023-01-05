@@ -83,8 +83,6 @@ class Game {
 
         if (this.parameters.mode === "endless") {
             this.step = Math.min(w, h)
-            // console.log(w, h, this.parameters, this.step)
-
             this.xMinBlock = 0
             this.xMaxBlock = 0
             this.yMinBlock = 0
@@ -93,6 +91,7 @@ class Game {
         }
         else {
             this.step = Math.max(w, h)
+            this.drawer.updateViewBox(0, 0, w, h)
             this.createArea()
         }
 

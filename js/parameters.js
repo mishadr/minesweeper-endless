@@ -63,25 +63,35 @@ class Parameters {
 
 
 class Result {
-    constructor(date, mode, density, opened, time) {
+    constructor(date, mode, density, opened, flags, time) {
         this.date = date
         this.mode = mode
         this.density = density
         this.opened = opened
+        this.flags = flags
         this.time = time
     }
 
-    static header() {
-        return ["Date", "Density", "Open", "Time"]
+    static header(mode) {
+        if (mode === "endless")
+            return ["#", "Density", "Open", "Time", "Date"]
+        else
+            return ["#", "Time", "Flags", "Date"]
     }
 
-    tr() {
+    tr(ix) {
         let $tr = $("<tr></tr>")
-        $tr.append($("<td></td>").text(this.date.toLocaleString('RU'))) // TODO add locale select
+        $tr.append($("<td></td>").text(ix + '.'))
         // $tr.append($("<td></td>").text(this.mode))
-        $tr.append($("<td></td>").text(this.density.toFixed(3)))
-        $tr.append($("<td></td>").text(this.opened))
+        if (this.mode === "endless") {
+            $tr.append($("<td></td>").text(this.density.toFixed(3)))
+            $tr.append($("<td></td>").text(this.opened))
+        }
         $tr.append($("<td></td>").text(this.time.toFixed(2)))
+        if (this.mode !== "endless") {
+            $tr.append($("<td></td>").text(this.flags))
+        }
+        $tr.append($("<td></td>").text(this.date.toLocaleString('RU'))) // TODO add locale select
         return $tr
     }
 
@@ -92,8 +102,10 @@ class Result {
             return r2.density - r1.density
         if (r1.opened !== r2.opened)
             return r2.opened - r1.opened
-        if (r1.time !== r2.time)
+        if (r1.time !== r2.time) // less better
             return r1.time - r2.time
+        if (r1.flags !== r2.flags) // less better
+            return r1.flags - r2.flags
         return 0
     }
 
@@ -103,7 +115,7 @@ class Result {
 
     static fromObj(obj) {
         return new Result(
-            new Date(obj["date"]), obj["mode"], obj["density"], obj["opened"], obj["time"])
+            new Date(obj["date"]), obj["mode"], obj["density"], obj["opened"], obj["flags"], obj["time"])
     }
 }
 
@@ -114,6 +126,7 @@ class ResultsList {
         this.list = {} // mode -> []
     }
 
+    // Add a new result to the list
     add(result) {
         let mode = result.mode
         if (!(mode in this.list))
@@ -121,6 +134,16 @@ class ResultsList {
         this.list[mode].push(result)
         this.list[mode].sort(Result.comparator)
         this.list[mode].splice(this.top)
+    }
+
+    // Get index of a given result in list[mode] or -1
+    index(result) {
+        if (result.mode in this.list)
+            for (let i=0; i<this.list[result.mode].length; ++i) {
+                let r = this.list[result.mode][i]
+                if (r.date === result.date) return i
+            }
+        return -1
     }
 
     toString() {
@@ -142,16 +165,22 @@ class ResultsList {
         return rl
     }
 
-    table(mode) {
+    // Get list as an html table
+    table(mode, rating) {
         let $table = $("<table></table>")
         let $tr = $("<tr></tr>")
         $table.append($tr)
-        for (const h of Result.header())
+        for (const h of Result.header(mode))
             $tr.append($("<th></th>").text(h))
 
         if (mode in this.list)
-            for (const result of this.list[mode])
-                $table.append(result.tr())
+            for (let i=0; i<this.list[mode].length; ++i) {
+                let result = this.list[mode][i]
+                let $tr = result.tr(i+1)
+                $table.append($tr)
+                if (i === rating) // highlight
+                    $tr.css('background-color', 'rgba(255,255,0,0.58)')
+            }
 
         return $table
     }

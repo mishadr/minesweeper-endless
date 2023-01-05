@@ -16,3 +16,7 @@ Try an endless mode for classic minesweeper game!
 * add loading picture
 * win/fail animation
 * highlight last result in table
+* best score for current mode
+* show neighbors on double-click
+* icon
+* separate results for each density

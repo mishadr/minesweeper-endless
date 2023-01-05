@@ -10,7 +10,8 @@ class Controller {
         this.game = null // new Game(this.parameters, this.drawer)
 
         this.status = 'off'
-        this.resultSaved = true
+        this.resultSaved = true // whether current result is saved
+        this.rating = -1 // place in the top-list
         this.timer = new Timer(100, () => {
             this.timeLabel.innerText = 'Time: ' + this.timer.time().toFixed(2)
         })
@@ -69,18 +70,19 @@ class Controller {
         })
 
         // Mouse clicking
+        window.oncontextmenu = (e) => e.preventDefault()
         this.canvas.addEventListener("mousedown", (e) => {
             // console.log('button', e.button, 'buttons', e.buttons, 'which', e.which)
             // FIXME: double click also fires left click
             if (this.game.status !== ON)
                 this.finish()
             else if (e.buttons === 1) {
-                this.timer.pause()
+                if (this.game.opened > 0) this.timer.pause()
                 // TODO show loading picture
                 this.game.leftClick(
                     e.offsetX + this.drawer.viewX,
                     e.offsetY + this.drawer.viewY) // this could take time
-                this.timer.run()
+                if (this.game.opened > 0) this.timer.run()
                 this.updateInfo()
                 if (this.game.status !== ON)
                     this.finish()
@@ -100,10 +102,6 @@ class Controller {
                     this.finish()
             }
         })
-        window.oncontextmenu = (e) => {
-            console.log('oncontextmenu')
-            e.preventDefault()
-        }
     }
 
     updateInfo() {
@@ -157,7 +155,7 @@ class Controller {
         else if (this.status === 'pause') {
             if (this.game) {
                 this.status = 'play'
-                if (this.game.opened > 0)
+                if (this.game.opened > 0 && this.game.status === ON)
                     this.timer.run()
             }
             else { // before playing
@@ -174,7 +172,6 @@ class Controller {
 
     // Finish the game with WIN or EXPLODE result
     finish() {
-        console.log(this.game.status)
         this.timer.pause()
         this.timeLabel.innerText = 'Time: ' + this.timer.time().toFixed(2)
         $(".finish").css('display', 'flex')
@@ -188,19 +185,21 @@ class Controller {
             if (!this.resultSaved) {
                 let currentResult = new Result(
                     new Date(), mode, this.parameters.density,
-                    this.game.opened, this.timer.time())
+                    this.game.opened, this.game.flags, this.timer.time())
                 resultsList.add(currentResult)
                 localStorage.setItem('resultsList', resultsList.toString())
                 this.resultSaved = true
+                this.rating = resultsList.index(currentResult)
             }
         }
         else {
             // TODO explode
+            this.rating = -1
         }
 
         // Show this mode top results
         let $div = $('#finish-table')
-        $div.html(`<p><u><b>Top results for ${mode}</b></u></p>`)
-        $div.append(resultsList.table(mode))
+        $div.html(`<u><b>Top results for ${mode}</b></u>`)
+        $div.append(resultsList.table(mode, this.rating))
     }
 }
